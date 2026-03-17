@@ -1,0 +1,20 @@
+{
+  "name": "soc-log-triage-casebook",
+  "version": "1.0.0",
+  "description": "SOC analyst portfolio project for log triage, IOC extraction, and incident reporting.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "soc",
+    "cybersecurity",
+    "log-analysis",
+    "incident-response",
+    "mitre-attack",
+    "threat-detection",
+    "blue-team"
+  ],
+  "author": "Dante Hill",
+  "license": "MIT"
+}
