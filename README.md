@@ -4,17 +4,17 @@ A Node.js cybersecurity portfolio project focused on reviewing, classifying, and
 
 ## Overview
 
-This project simulates the first-pass triage process a SOC analyst might perform when reviewing authentication or system-related log activity.
+This project simulates the first-pass triage process a SOC analyst might perform when reviewing authentication and web-related log activity.
 
-Instead of treating every event the same, the goal is to examine raw log entries, identify suspicious patterns, separate likely benign activity from events that may require escalation, and organize the results into a clearer investigation workflow.
+The goal is to examine raw log entries, identify suspicious patterns, separate likely benign activity from events that may require escalation, and organize the results into a clearer investigation workflow.
 
 ## What This Project Does
 
 The project is designed to:
 
-- review raw log entries from sample data
+- review raw Apache access logs and authentication logs
 - parse useful fields from each event
-- identify patterns associated with suspicious behavior
+- identify suspicious request patterns and authentication abuse
 - classify findings for easier review
 - support a basic triage-and-escalation workflow
 
@@ -25,25 +25,39 @@ This project reflects a simple Tier 1 SOC process:
 1. Review raw log entries
 2. Extract relevant details
 3. Identify unusual or repeated behavior
-4. Classify findings by type or severity
+4. Classify findings by type and severity
 5. Prepare results for further review or escalation
 
-## Example Use Cases
+## Example Detections
 
-This repo is intended to reflect tasks such as:
+This repo includes logic for identifying:
 
-- failed login review
-- repeated authentication attempts
-- suspicious source behavior
-- initial alert validation
-- separating likely noise from events worth deeper investigation
+- suspicious web requests
+- repeated failed login attempts
+- brute-force candidates
+- successful logins after repeated failures
+- suspicious IPs appearing across multiple findings
+
+## Output
+
+The script writes results to:
+
+- `output/analysis.json`
+
+The output includes:
+
+- suspicious web events
+- brute-force candidates
+- successful logins
+- suspicious success-after-failure events
+- a consolidated IOC list of suspicious IPs
 
 ## Skills Demonstrated
 
 - Security event triage
 - Log review and classification
-- Recognizing suspicious patterns in authentication or system logs
-- Organizing findings clearly for investigation
+- Basic detection logic for web and authentication activity
+- Organizing findings for investigation
 - JavaScript and Node.js scripting for security workflows
 
 ## Tech Stack
@@ -52,6 +66,7 @@ This repo is intended to reflect tasks such as:
 - JavaScript
 - Log parsing
 - Rule-based analysis
+- JSON output generation
 
 ## Why I Built It
 
@@ -63,11 +78,11 @@ This is a portfolio project built around sample data and rule-based logic. It is
 
 ## Possible Next Steps
 
-- severity tagging
-- CSV or JSON export improvements
+- severity tuning
 - better event grouping
-- simple alert scoring
 - expanded log-source support
+- CSV export
+- simple enrichment or scoring
 
 ## Note
 
