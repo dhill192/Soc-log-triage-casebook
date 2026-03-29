@@ -44,27 +44,49 @@ function analyzeApacheLogs(lines) {
     const ip = ipMatch[1];
     const method = requestMatch[1];
     const requestPath = requestMatch[2];
-    const status = statusMatch ? statusMatch[1] : "unknown";
+    const status = statusMatch ? Number(statusMatch[1]) : null;
 
     uniqueIPs.add(ip);
     ipRequestCount[ip] = (ipRequestCount[ip] || 0) + 1;
 
     const pathFlag = suspiciousPaths.some((p) => requestPath.includes(p));
     const patternFlag = suspiciousPatterns.some((pattern) => pattern.test(requestPath));
+    const errorFlag = status !== null && status >= 500;
 
-    if (pathFlag || patternFlag || Number(status) >= 400) {
+    if (pathFlag || patternFlag || errorFlag) {
+      let classification = "web_review";
+      let severity = "medium";
+
+      if (patternFlag) {
+        classification = "web_attack_pattern";
+        severity = "high";
+      } else if (pathFlag) {
+        classification = "web_probe";
+        severity = "medium";
+      } else if (errorFlag) {
+        classification = "server_error_review";
+        severity = "low";
+      }
+
       suspiciousRequests.push({
         ip,
         method,
         requestPath,
-        status
+        status: status ?? "unknown",
+        classification,
+        severity
       });
     }
   }
 
   const highVolumeIPs = Object.entries(ipRequestCount)
     .filter(([, count]) => count >= 4)
-    .map(([ip, count]) => ({ ip, count }));
+    .map(([ip, count]) => ({
+      ip,
+      count,
+      classification: "high_volume_source",
+      severity: "medium"
+    }));
 
   return {
     totalLines: lines.length,
@@ -87,21 +109,27 @@ function analyzeAuthLogs(lines) {
       const username = failedMatch[2];
       const ip = failedMatch[3];
       const key = `${ip}:${username}`;
-
       failedLogins[key] = (failedLogins[key] || 0) + 1;
     }
 
     if (successMatch) {
       const username = successMatch[1];
       const ip = successMatch[2];
-      successfulLogins.push({ ip, username });
+      successfulLogins.push({
+        ip,
+        username,
+        classification: "successful_login",
+        severity: "informational"
+      });
 
       const key = `${ip}:${username}`;
       if (failedLogins[key] && failedLogins[key] >= 3) {
         suspiciousSuccessAfterFailure.push({
           ip,
           username,
-          priorFailures: failedLogins[key]
+          priorFailures: failedLogins[key],
+          classification: "success_after_repeated_failures",
+          severity: "high"
         });
       }
     }
@@ -111,7 +139,13 @@ function analyzeAuthLogs(lines) {
     .filter(([, count]) => count >= 3)
     .map(([key, count]) => {
       const [ip, username] = key.split(":");
-      return { ip, username, failedAttempts: count };
+      return {
+        ip,
+        username,
+        failedAttempts: count,
+        classification: "brute_force_candidate",
+        severity: "high"
+      };
     });
 
   return {
@@ -145,7 +179,10 @@ function main() {
     summary: {
       project: "SOC Log Triage Casebook",
       generatedAt: new Date().toISOString(),
-      totalSuspiciousIPs: iocs.length
+      totalSuspiciousIPs: iocs.length,
+      suspiciousWebEvents: apacheAnalysis.suspiciousRequests.length,
+      bruteForceCandidates: authAnalysis.bruteForceCandidates.length,
+      suspiciousSuccessAfterFailure: authAnalysis.suspiciousSuccessAfterFailure.length
     },
     apacheAnalysis,
     authAnalysis,
@@ -157,6 +194,9 @@ function main() {
 
   console.log("Analysis complete.");
   console.log(`Suspicious IPs identified: ${iocs.length}`);
+  console.log(`Suspicious web events: ${apacheAnalysis.suspiciousRequests.length}`);
+  console.log(`Brute-force candidates: ${authAnalysis.bruteForceCandidates.length}`);
+  console.log(`Success-after-failure events: ${authAnalysis.suspiciousSuccessAfterFailure.length}`);
   console.log(`Output written to: ${outputPath}`);
 }
 
